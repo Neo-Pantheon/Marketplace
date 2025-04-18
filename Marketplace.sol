@@ -71,6 +71,9 @@ contract NPMarketplace is Ownable(msg.sender), ReentrancyGuard, IERC721Receiver 
             "Contract must be approved to transfer NFT"
         );
 
+        // Transfer NFT to marketplace contract for custody
+        nftContract.safeTransferFrom(msg.sender, address(this), _tokenId);
+
         // Create listing
         listings[_nftContract][_tokenId] = Listing({
             nftContract: _nftContract,
@@ -118,9 +121,9 @@ contract NPMarketplace is Ownable(msg.sender), ReentrancyGuard, IERC721Receiver 
             "Token transfer of marketplace fee failed"
         );
 
-        // Transfer NFT to buyer
+        // Transfer NFT directly from marketplace to buyer
         IERC721(_nftContract).safeTransferFrom(
-            listing.seller, 
+            address(this), 
             msg.sender, 
             _tokenId
         );
@@ -146,6 +149,13 @@ contract NPMarketplace is Ownable(msg.sender), ReentrancyGuard, IERC721Receiver 
         
         require(listing.isActive, "NFT not listed");
         require(listing.seller == msg.sender, "Only seller can delist");
+
+        // Transfer NFT back to seller
+        IERC721(_nftContract).safeTransferFrom(
+            address(this),
+            msg.sender,
+            _tokenId
+        );
 
         // Remove listing
         delete listings[_nftContract][_tokenId];
